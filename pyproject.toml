@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "project2_galimova_m25555"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Karina Galimova  <karina.galimova.98@mail.ru>"]
 
@@ -10,10 +10,26 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
+prompt = "^0.4.1"
 
 [tool.poetry.scripts]
 project = "src.primitive_db.main:main"
 
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = ["venv", ".venv", "dist", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.14.7,<0.15.0)"
+]
