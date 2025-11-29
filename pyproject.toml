@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "project2_galimova_m25555"
-version = "0.2.0"
+version = "0.3.0"
 description = ""
 authors = ["Karina Galimova  <karina.galimova.98@mail.ru>"]
 
@@ -14,6 +14,8 @@ prompt = "^0.4.1"
 
 [tool.poetry.scripts]
 project = "src.primitive_db.main:main"
+database = "src.primitive_db.main:main"
+
 
 [tool.ruff]
 line-length = 88

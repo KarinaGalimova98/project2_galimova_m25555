@@ -2,12 +2,14 @@
 
 """Entry point for primitive_db project."""
 
-from .engine import welcome
+from __future__ import annotations
+
+from .engine import run
 
 
 def main() -> None:
-    """Run the application."""
-    welcome()
+    """Run the database application."""
+    run()
 
 
 if __name__ == "__main__":
