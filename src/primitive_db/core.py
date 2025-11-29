@@ -1,5 +1,6 @@
 """Core logic for working with tables and metadata."""
 
+from prettytable import PrettyTable
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
@@ -99,3 +100,101 @@ def list_tables(metadata: Dict[str, Any]) -> None:
 
     for name in metadata:
         print(f"- {name}")
+
+
+def insert(metadata, table_name, values, table_data):
+    if table_name not in metadata:
+        print(f'Ошибка: Таблица "{table_name}" не существует.')
+        return table_data
+
+    columns = metadata[table_name]["columns"][1:]  # без ID
+    if len(values) != len(columns):
+        print("Ошибка: количество значений не соответствует количеству столбцов.")
+        return table_data
+
+    parsed = {}
+
+    for (col, col_type), raw_value in zip(columns, values):
+        if col_type == "int":
+            try:
+                parsed[col] = int(raw_value)
+            except ValueError:
+                print(f"Ошибка: {raw_value} должно быть int.")
+                return table_data
+
+        elif col_type == "bool":
+            if raw_value.lower() in ("true", "1"):
+                parsed[col] = True
+            elif raw_value.lower() in ("false", "0"):
+                parsed[col] = False
+            else:
+                print(f"Ошибка: {raw_value} должно быть bool.")
+                return table_data
+
+        elif col_type == "str":
+            parsed[col] = raw_value.strip('"')
+
+    new_id = (table_data[-1]["ID"] + 1) if table_data else 1
+    record = {"ID": new_id, **parsed}
+    table_data.append(record)
+
+    print(f'Запись с ID={new_id} успешно добавлена в таблицу "{table_name}".')
+    return table_data
+
+
+def select(table_data, where=None):
+    if where is None:
+        return table_data
+
+    key, value = next(iter(where.items()))
+
+    def match(record):
+        return str(record.get(key)) == str(value)
+
+    return [r for r in table_data if match(r)]
+
+
+def update(table_data, set_clause, where):
+    key_where, value_where = next(iter(where.items()))
+    updated = 0
+
+    for record in table_data:
+        if str(record.get(key_where)) == str(value_where):
+            for k, v in set_clause.items():
+                record[k] = v
+            updated += 1
+
+    if updated:
+        print(f"Обновлено записей: {updated}")
+    else:
+        print("Записи не найдены.")
+
+    return table_data
+
+
+def delete(table_data, where):
+    key_where, value_where = next(iter(where.items()))
+    new_data = [r for r in table_data if str(r.get(key_where)) != str(value_where)]
+    deleted = len(table_data) - len(new_data)
+
+    if deleted:
+        print(f"Удалено записей: {deleted}")
+    else:
+        print("Записи не найдены.")
+
+    return new_data
+
+
+def print_table(table_data):
+    if not table_data:
+        print("Нет данных.")
+        return
+
+    table = PrettyTable()
+    headers = table_data[0].keys()
+    table.field_names = list(headers)
+
+    for row in table_data:
+        table.add_row([row[h] for h in headers])
+
+    print(table)

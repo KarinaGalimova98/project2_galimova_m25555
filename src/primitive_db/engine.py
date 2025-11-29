@@ -8,6 +8,17 @@ import prompt
 
 from .core import create_table, drop_table, list_tables
 from .utils import load_metadata, save_metadata
+from .utils import load_table_data, save_table_data
+from .parser import parse_where, parse_set
+from .core import (
+    insert,
+    select,
+    update,
+    delete,
+    print_table,
+)
+
+
 
 METADATA_FILE = "db_meta.json"
 
@@ -74,6 +85,42 @@ def run() -> None:
             table_name = args[1]
             metadata = drop_table(metadata, table_name)
             save_metadata(METADATA_FILE, metadata)
+
+        elif command == "insert":
+            if len(args) < 4 or args[1] != "into" or args[3] != "values":
+                print("Некорректная команда insert")
+                continue
+
+            table = args[2]
+            raw_vals = user_input.split("values", 1)[1].strip()
+            raw_vals = raw_vals.strip("()")
+            values = [v.strip() for v in raw_vals.split(",")]
+
+            table_data = load_table_data(table)
+            table_data = insert(metadata, table, values, table_data)
+            save_table_data(table, table_data)
+
+        elif command == "select":
+            if len(args) < 3 or args[1] != "from":
+                print("Некорректная команда select")
+                continue
+
+            table = args[2]
+            table_data = load_table_data(table)
+
+            if len(args) == 3:
+                result = select(table_data)
+                print_table(result)
+            continue
+
+            if args[3] != "where":
+                print("Некорректная команда select")
+                continue
+
+            where = parse_where(args[4:])
+            result = select(table_data, where)           
+            print_table(result)
+
 
         elif command == "list_tables":
             list_tables(metadata)
