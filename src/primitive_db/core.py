@@ -1,18 +1,21 @@
-"""Core logic for working with tables and metadata."""
+"""Core logic for working with tables, metadata and CRUD operations."""
 
-from prettytable import PrettyTable
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
 
+from prettytable import PrettyTable
+
 ALLOWED_TYPES = {"int", "str", "bool"}
+
+
+# ----------------- работа со схемой таблиц -----------------
 
 
 def _parse_columns(raw_columns: List[str]) -> Tuple[bool, List[Tuple[str, str]]]:
     """Parse columns from 'name:type' strings.
 
     Returns (success, columns).
-    On error prints message and returns (False, []).
     """
     parsed: List[Tuple[str, str]] = []
 
@@ -46,7 +49,6 @@ def create_table(
     table_name: str,
     columns: List[str],
 ) -> Dict[str, Any]:
-
     """Create a new table in metadata.
 
     - Adds ID:int column if user did not specify it.
@@ -57,7 +59,7 @@ def create_table(
         return metadata
 
     if not columns:
-        print("Некорректное значение: отсутствует описание столбцов. Попробуйте снова.")
+        print("Некорректное значение: отсутствует описание столбцов.")
         return metadata
 
     ok, parsed_columns = _parse_columns(columns)
@@ -102,59 +104,90 @@ def list_tables(metadata: Dict[str, Any]) -> None:
         print(f"- {name}")
 
 
-def insert(metadata, table_name, values, table_data):
+# ----------------- CRUD-операции -----------------
+
+
+def _cast_value(value: str, type_name: str) -> Any:
+    """Cast string value to proper Python type based on column type."""
+    if type_name == "int":
+        return int(value)
+
+    if type_name == "bool":
+        if value.lower() in ("true", "1"):
+            return True
+        if value.lower() in ("false", "0"):
+            return False
+        raise ValueError("Ожидалось значение bool (true/false).")
+
+    # str
+    value = value.strip()
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1]
+    return value
+
+
+def insert(
+    metadata: Dict[str, Any],
+    table_name: str,
+    values: List[str],
+    table_data: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Insert new row into table."""
     if table_name not in metadata:
         print(f'Ошибка: Таблица "{table_name}" не существует.')
         return table_data
 
-    columns = metadata[table_name]["columns"][1:]  # без ID
+    # Берём все столбцы, кроме ID
+    columns = metadata[table_name]["columns"][1:]  # список dict: {name, type}
+
     if len(values) != len(columns):
         print("Ошибка: количество значений не соответствует количеству столбцов.")
         return table_data
 
-    parsed = {}
+    record: Dict[str, Any] = {}
 
-    for (col, col_type), raw_value in zip(columns, values):
-        if col_type == "int":
-            try:
-                parsed[col] = int(raw_value)
-            except ValueError:
-                print(f"Ошибка: {raw_value} должно быть int.")
-                return table_data
-
-        elif col_type == "bool":
-            if raw_value.lower() in ("true", "1"):
-                parsed[col] = True
-            elif raw_value.lower() in ("false", "0"):
-                parsed[col] = False
-            else:
-                print(f"Ошибка: {raw_value} должно быть bool.")
-                return table_data
-
-        elif col_type == "str":
-            parsed[col] = raw_value.strip('"')
+    for column_def, raw_value in zip(columns, values):
+        col_name = column_def["name"]
+        col_type = column_def["type"]
+        try:
+            record[col_name] = _cast_value(raw_value, col_type)
+        except ValueError as exc:
+            print(f"Ошибка преобразования значения для {col_name}: {exc}")
+            return table_data
 
     new_id = (table_data[-1]["ID"] + 1) if table_data else 1
-    record = {"ID": new_id, **parsed}
-    table_data.append(record)
+    full_record = {"ID": new_id, **record}
+    table_data.append(full_record)
+
+    # DEBUG: можно оставить, можно потом убрать
+    # print("DEBUG INSERT:", full_record)
 
     print(f'Запись с ID={new_id} успешно добавлена в таблицу "{table_name}".')
     return table_data
 
 
-def select(table_data, where=None):
+def select(
+    table_data: List[Dict[str, Any]],
+    where: Dict[str, Any] | None = None,
+) -> List[Dict[str, Any]]:
+    """Select rows, optionally with simple equality condition."""
     if where is None:
         return table_data
 
     key, value = next(iter(where.items()))
 
-    def match(record):
+    def match(record: Dict[str, Any]) -> bool:
         return str(record.get(key)) == str(value)
 
     return [r for r in table_data if match(r)]
 
 
-def update(table_data, set_clause, where):
+def update(
+    table_data: List[Dict[str, Any]],
+    set_clause: Dict[str, Any],
+    where: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Update rows matching where condition."""
     key_where, value_where = next(iter(where.items()))
     updated = 0
 
@@ -172,7 +205,11 @@ def update(table_data, set_clause, where):
     return table_data
 
 
-def delete(table_data, where):
+def delete(
+    table_data: List[Dict[str, Any]],
+    where: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Delete rows matching where condition."""
     key_where, value_where = next(iter(where.items()))
     new_data = [r for r in table_data if str(r.get(key_where)) != str(value_where)]
     deleted = len(table_data) - len(new_data)
@@ -185,14 +222,15 @@ def delete(table_data, where):
     return new_data
 
 
-def print_table(table_data):
+def print_table(table_data: List[Dict[str, Any]]) -> None:
+    """Pretty-print table data using PrettyTable."""
     if not table_data:
         print("Нет данных.")
         return
 
     table = PrettyTable()
-    headers = table_data[0].keys()
-    table.field_names = list(headers)
+    headers = list(table_data[0].keys())
+    table.field_names = headers
 
     for row in table_data:
         table.add_row([row[h] for h in headers])

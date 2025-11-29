@@ -6,19 +6,23 @@ import shlex
 
 import prompt
 
-from .core import create_table, drop_table, list_tables
-from .utils import load_metadata, save_metadata
-from .utils import load_table_data, save_table_data
-from .parser import parse_where, parse_set
 from .core import (
+    create_table,
+    delete,
+    drop_table,
     insert,
+    list_tables,
+    print_table,
     select,
     update,
-    delete,
-    print_table,
 )
-
-
+from .parser import parse_set, parse_where
+from .utils import (
+    load_metadata,
+    load_table_data,
+    save_metadata,
+    save_table_data,
+)
 
 METADATA_FILE = "db_meta.json"
 
@@ -111,7 +115,7 @@ def run() -> None:
             if len(args) == 3:
                 result = select(table_data)
                 print_table(result)
-            continue
+                continue
 
             if args[3] != "where":
                 print("Некорректная команда select")
@@ -120,6 +124,58 @@ def run() -> None:
             where = parse_where(args[4:])
             result = select(table_data, where)           
             print_table(result)
+
+
+        elif command == "update": 
+            if len(args) < 6 or args[2] != "set":
+                print("Некорректная команда update")
+                continue
+
+            table = args[1]
+
+            set_clause = parse_set(args[3:6])
+            if args[6] != "where":
+                print("Некорректная команда update")
+                continue
+
+            where_clause = parse_where(args[7:])
+            if not set_clause or not where_clause:
+                continue
+
+            table_data = load_table_data(table)
+            table_data = update(table_data, set_clause, where_clause)
+            save_table_data(table, table_data)
+
+        elif command == "delete":
+            if len(args) < 5 or args[1] != "from" or args[3] != "where":
+                print("Некорректная команда delete")
+                continue
+
+            table = args[2]
+            where_clause = parse_where(args[4:])
+
+            table_data = load_table_data(table)
+            table_data = delete(table_data, where_clause)
+            save_table_data(table, table_data)
+        
+        elif command == "info":
+            if len(args) != 2:
+                print("Некорректная команда info")
+                continue
+
+            table = args[1]
+
+            if table not in metadata:
+                print(f'Таблица "{table}" не существует.')
+                continue
+
+            cols = metadata[table]["columns"]
+            cols_str = ", ".join(f"{c['name']}:{c['type']}" for c in cols)
+
+            table_data = load_table_data(table)
+            print(f"Таблица: {table}")
+            print(f"Столбцы: {cols_str}")
+            print(f"Количество записей: {len(table_data)}")
 
 
         elif command == "list_tables":
