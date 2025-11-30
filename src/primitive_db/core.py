@@ -6,10 +6,17 @@ from typing import Any, Dict, List, Tuple
 
 from prettytable import PrettyTable
 
+from src.decorators import (
+    confirm_action,
+    create_cacher,
+    handle_db_errors,
+    log_time,
+)
+
 ALLOWED_TYPES = {"int", "str", "bool"}
 
 
-# ----------------- работа со схемой таблиц -----------------
+select_cache = create_cacher()
 
 
 def _parse_columns(raw_columns: List[str]) -> Tuple[bool, List[Tuple[str, str]]]:
@@ -43,7 +50,7 @@ def _parse_columns(raw_columns: List[str]) -> Tuple[bool, List[Tuple[str, str]]]
 
     return True, parsed
 
-
+@handle_db_errors
 def create_table(
     metadata: Dict[str, Any],
     table_name: str,
@@ -82,7 +89,8 @@ def create_table(
 
     return metadata
 
-
+@handle_db_errors
+@confirm_action("удаление таблицы")
 def drop_table(metadata: Dict[str, Any], table_name: str) -> Dict[str, Any]:
     """Drop table from metadata."""
     if table_name not in metadata:
@@ -104,8 +112,7 @@ def list_tables(metadata: Dict[str, Any]) -> None:
         print(f"- {name}")
 
 
-# ----------------- CRUD-операции -----------------
-
+# CRUD ops
 
 def _cast_value(value: str, type_name: str) -> Any:
     """Cast string value to proper Python type based on column type."""
@@ -125,7 +132,8 @@ def _cast_value(value: str, type_name: str) -> Any:
         return value[1:-1]
     return value
 
-
+@handle_db_errors
+@log_time
 def insert(
     metadata: Dict[str, Any],
     table_name: str,
@@ -166,22 +174,41 @@ def insert(
     return table_data
 
 
+@handle_db_errors
+@log_time
 def select(
     table_data: List[Dict[str, Any]],
     where: Dict[str, Any] | None = None,
 ) -> List[Dict[str, Any]]:
-    """Select rows, optionally with simple equality condition."""
+    """Select rows, optionally with simple equality condition.
+
+    Результаты кэшируются по ключу (условие + размер таблицы).
+    """
+
+    def compute() -> List[Dict[str, Any]]:
+        if where is None:
+            return table_data
+
+        key_where, value_where = next(iter(where.items()))
+
+        def match(record: Dict[str, Any]) -> bool:
+            return str(record.get(key_where)) == str(value_where)
+
+        return [r for r in table_data if match(r)]
+
     if where is None:
-        return table_data
+        cache_key = ("select_all", len(table_data))
+    else:
+        # сортировка пар для стабильного ключа
+        cache_key = (
+            "select_where",
+            len(table_data),
+            tuple(sorted(where.items())),
+        )
 
-    key, value = next(iter(where.items()))
+    return select_cache(cache_key, compute)
 
-    def match(record: Dict[str, Any]) -> bool:
-        return str(record.get(key)) == str(value)
-
-    return [r for r in table_data if match(r)]
-
-
+@handle_db_errors
 def update(
     table_data: List[Dict[str, Any]],
     set_clause: Dict[str, Any],
@@ -204,7 +231,8 @@ def update(
 
     return table_data
 
-
+@handle_db_errors
+@confirm_action("удаление записей")
 def delete(
     table_data: List[Dict[str, Any]],
     where: Dict[str, Any],

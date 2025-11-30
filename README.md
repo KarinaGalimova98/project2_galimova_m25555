@@ -53,3 +53,20 @@ database
 
 
 [![asciicast](https://asciinema.org/a/gMdhs8HvVJ25u4KBQbYJD58Jd.svg)](https://asciinema.org/a/gMdhs8HvVJ25u4KBQbYJD58Jd)
+
+
+## Обработка ошибок и декораторы
+
+В проекте используются декораторы:
+
+- `@handle_db_errors` — единая обработка ошибок (`KeyError`, `ValueError`,
+  `FileNotFoundError` и др.).
+- `@confirm_action("…")` — запрашивает подтверждение перед опасными операциями
+  (удаление таблицы, удаление записей).
+- `@log_time` — выводит время выполнения функции.
+- Кэширование результатов `select` реализовано через замыкание `create_cacher()`.
+
+### Финальная демонстрация работы проекта (decorators)
+
+[![asciicast](https://asciinema.org/a/TgBt5vsTT0JoobuymRQORzIfP.svg)](https://asciinema.org/a/TgBt5vsTT0JoobuymRQORzIfP)
+
