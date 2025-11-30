@@ -13,8 +13,7 @@ from src.decorators import (
     log_time,
 )
 
-ALLOWED_TYPES = {"int", "str", "bool"}
-
+from .constants import ALLOWED_TYPES
 
 select_cache = create_cacher()
 

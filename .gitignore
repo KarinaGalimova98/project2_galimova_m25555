@@ -2,3 +2,7 @@
 dist/
 __pycache__/
 
+data/
+db_meta.json
+demo.cast
+final_decorators.cast

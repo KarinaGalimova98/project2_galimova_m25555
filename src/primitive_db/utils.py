@@ -6,7 +6,8 @@ import json
 import os
 from typing import Any, Dict
 
-DATA_DIR = "data"
+from .constants import DATA_DIR
+
 
 def load_metadata(filepath: str) -> Dict[str, Any]:
     """Load database metadata from JSON file.
