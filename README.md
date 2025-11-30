@@ -7,9 +7,7 @@ make install
 ```
 
 
-```markdown
 ## Запуск
-```
 
 ```bash
 poetry run database
