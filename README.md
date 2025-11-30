@@ -4,10 +4,12 @@
 poetry install
 # или
 make install
+```
 
 
 ```markdown
 ## Запуск
+```
 
 ```bash
 poetry run database
@@ -15,6 +17,7 @@ poetry run database
 database     
 # или
 make project  
+```
 
 
 # Primitive DB
