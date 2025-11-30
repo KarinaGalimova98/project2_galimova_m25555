@@ -1,8 +1,8 @@
 [
     {
-        "ID": 1,
-        "name": "Sergei",
-        "age": 28,
+        "ID": 2,
+        "name": "Karina",
+        "age": "29",
         "is_active": true
     }
 ]

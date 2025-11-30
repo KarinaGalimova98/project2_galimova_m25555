@@ -47,3 +47,9 @@ $ database
 database
 
 ```
+
+### Демонстрация CRUD-операций 
+
+
+
+[![asciicast](https://asciinema.org/a/gMdhs8HvVJ25u4KBQbYJD58Jd.svg)](https://asciinema.org/a/gMdhs8HvVJ25u4KBQbYJD58Jd)
