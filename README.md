@@ -77,7 +77,7 @@ $ database
 
 
 
-[![asciicast](https://asciinema.org/a/gMdhs8HvVJ25u4KBQbYJD58Jd.svg)](https://asciinema.org/a/gMdhs8HvVJ25u4KBQbYJD58Jd)
+[![asciicast](https://asciinema.org/a/o9p3oAusHgH7kkeIvJDJMjD2S.svg)](https://asciinema.org/a/o9p3oAusHgH7kkeIvJDJMjD2S)
 
 
 ## Обработка ошибок и декораторы
@@ -93,5 +93,5 @@ $ database
 
 ### Финальная демонстрация работы проекта (decorators)
 
-[![asciicast](https://asciinema.org/a/TgBt5vsTT0JoobuymRQORzIfP.svg)](https://asciinema.org/a/TgBt5vsTT0JoobuymRQORzIfP)
+[![asciicast](https://asciinema.org/a/WLDayTlH7gOVfKGggnTzIi5tW.svg)](https://asciinema.org/a/WLDayTlH7gOVfKGggnTzIi5tW)
 
